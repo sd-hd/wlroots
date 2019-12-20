@@ -6,13 +6,18 @@
 #include <time.h>
 #include <unistd.h>
 #include <wayland-server-core.h>
+#include <wlr/config.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_gtk_primary_selection.h>
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/util/log.h>
 #include "types/wlr_data_device.h"
 #include "types/wlr_seat.h"
+#if !WLR_USE_XDG_DIR
 #include "util/shm.h"
+#else
+#include "util/os-compatibility.h"
+#endif
 #include "util/signal.h"
 
 static void default_keyboard_enter(struct wlr_seat_keyboard_grab *grab,
@@ -348,7 +353,11 @@ static void seat_client_send_keymap(struct wlr_seat_client *client,
 			continue;
 		}
 
+		#if !WLR_USE_XDG_DIR
 		int keymap_fd = allocate_shm_file(keyboard->keymap_size);
+		#else
+		int keymap_fd = os_create_anonymous_file(keyboard->keymap_size);
+		#endif
 		if (keymap_fd < 0) {
 			wlr_log(WLR_ERROR, "creating a keymap file for %zu bytes failed", keyboard->keymap_size);
 			continue;
